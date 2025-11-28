@@ -61,7 +61,7 @@ class Hub():
 if __name__ == '__main__':
     main_hub = Hub()
     model = lm.N_Gram_Model(main_hub.get_processor(),main_hub.get_tokenizer())
-    options = {'get text': main_hub.get_text,'get titles': main_hub.get_titles,'n_grams':model.create_and_predict,
+    options = {'get text': main_hub.get_text,'get titles': main_hub.get_titles,'n_grams':model.get_vocabulary,
                'find sequence': main_hub.find_token_sequence}
     while True:
         for i,item in enumerate(options):

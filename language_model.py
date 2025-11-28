@@ -7,6 +7,29 @@ import util_datastructs as ud
 from typing import List
 
 
+def organize_corpus(func):
+    def wrapper(corpus: pd.Series,tokenizer: dp.Tokenizer):
+        assert isinstance(corpus, pd.Series)
+        pretrain_corpus: List[str] = []
+        tokenized_corpus = func(corpus,tokenizer)
+        assert isinstance(tokenized_corpus, list)
+        tokenized_corpus = [x.split(' ') for x in tokenized_corpus]
+        for item in tokenized_corpus:
+            item.insert(0, '<START>')
+            item.append('<END>')
+            pretrain_corpus.extend(item)
+        return pd.Series(pretrain_corpus)
+    return wrapper
+
+@organize_corpus
+def tokenize_corpus(corpus: pd.Series,tokenizer: dp.Tokenizer):
+    assert isinstance(corpus, pd.Series)
+    converted_corpus = corpus.tolist()
+    tokenized_corpus = [tokenizer.tokenize(x) for x in converted_corpus]
+    return tokenized_corpus
+
+
+
 class Language_Model:
     def __init__(self, corpus: dp.DataProcessor, tokenizer: dp.Tokenizer):
         self.corpus = corpus.get_corpus()
@@ -24,22 +47,16 @@ class Language_Model:
         self.corpus = self.corpus.iloc[:, int(user_choice)]
         print('New Corpus \n {}'.format(self.corpus))
 
-    def tokenize_corpus(self):
-        assert isinstance(self.corpus, pd.Series)
-        converted_corpus = self.corpus.tolist()
-        tokenized_corpus = [self.tokenizer.tokenize(x) for x in converted_corpus]
-        return tokenized_corpus
+    def get_vocabulary(self):
+        if isinstance(self.corpus, pd.DataFrame):
+            self.set_language()
+        else:
+            pass
+        tokenized_corpus = tokenize_corpus(self.corpus,self.tokenizer)
+        vocabulary = [token for token in tokenized_corpus.unique() if token != '<START>' and token != '<END>']
+        token_2_idx = {token:i for i,token in enumerate(sorted(vocabulary))}
+        print(token_2_idx)
 
-    def organize_corpus(self):
-        pretrain_corpus: List[str] = []
-        tokenized_corpus = self.tokenize_corpus()
-        assert isinstance(tokenized_corpus, list)
-        tokenized_corpus = [x.split(' ') for x in tokenized_corpus]
-        for item in tokenized_corpus:
-            item.insert(0, '<START>')
-            item.append('<END>')
-            pretrain_corpus.extend(item)
-        return pd.Series(pretrain_corpus)
 
 
 class N_Gram_Model(Language_Model):

@@ -14,6 +14,7 @@ class Hub():
         self.processor = dp.DataProcessor()
         self.tokenizer = dp.Tokenizer()
         self.corpus = None
+        self.set_corpus()
 
     def get_processor(self):
         return self.processor
@@ -46,7 +47,7 @@ class Hub():
                 print('Please give a valid answer!')
 
         sents = self.corpus.iloc[:, int(user_choice)]
-        sents.apply(lambda x: ' '.join(self.tokenizer.tokenize(x)))
+        sents.apply(lambda x: self.tokenizer.tokenize(x))
         user_sequence = input('Please enter your sequence: ')
         filter = sents.str.contains(user_sequence.lower(), case=False)
         print(self.corpus[filter])
@@ -60,8 +61,7 @@ class Hub():
 
 if __name__ == '__main__':
     main_hub = Hub()
-    model = lm.N_Gram_Model(main_hub.get_processor(),main_hub.get_tokenizer())
-    options = {'get text': main_hub.get_text,'get titles': main_hub.get_titles,'n_grams':model.get_vocabulary,
+    options = {'get text': main_hub.get_text,'get titles': main_hub.get_titles,'n_grams':lm.create_ngrams,
                'find sequence': main_hub.find_token_sequence}
     while True:
         for i,item in enumerate(options):

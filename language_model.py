@@ -6,103 +6,93 @@ import Data_Processor as dp
 import util_datastructs as ud
 from typing import List
 
+def organize_corpus(corpus:pd.DataFrame,tokenizer:dp.Tokenizer):
+    while True:
+        user_choice = input(f'{corpus.iloc[0,0]} | {corpus.iloc[0,1]}' + '\n' + 'Enter a choice: ')
+        try:
+            int(user_choice) in [0,1] == True
+        except ValueError:
+            print('Please enter a valid integer')
+        else:
+            break
 
-def organize_corpus(func):
-    def wrapper(corpus: pd.Series,tokenizer: dp.Tokenizer):
-        assert isinstance(corpus, pd.Series)
-        pretrain_corpus: List[str] = []
-        tokenized_corpus = func(corpus,tokenizer)
-        assert isinstance(tokenized_corpus, list)
-        tokenized_corpus = [x.split(' ') for x in tokenized_corpus]
-        for item in tokenized_corpus:
-            item.insert(0, '<START>')
-            item.append('<END>')
-            pretrain_corpus.extend(item)
-        return pd.Series(pretrain_corpus)
+    sentences = corpus.iloc[:,int(user_choice)].apply(lambda x: tokenizer.tokenize(x))
+
+    formatted_corpus = []
+    for sentence in sentences.tolist():
+        tokens:List[str] = sentence.split(' ')
+        tokens.insert(0,'<START>')
+        tokens.append('<END>')
+        formatted_corpus.extend(tokens)
+
+    return formatted_corpus
+
+
+def ngram_decorator(func):
+    def wrapper(corpus:pd.DataFrame,tokenizer:dp.Tokenizer,n:int=2):
+        models = {}
+        formatted_corpus = organize_corpus(corpus,tokenizer)
+        while n >= 1:
+            models[f'{n}-gram model'] = func(formatted_corpus,n)
+            print(f'{n}-gram model')
+            print(models[f'{n}-gram model'])
+            n -= 1
+        return models
     return wrapper
 
-@organize_corpus
-def tokenize_corpus(corpus: pd.Series,tokenizer: dp.Tokenizer):
-    assert isinstance(corpus, pd.Series)
-    converted_corpus = corpus.tolist()
-    tokenized_corpus = [tokenizer.tokenize(x) for x in converted_corpus]
-    return tokenized_corpus
+@ngram_decorator
+def create_ngrams(corpus:List[str],n):
+    if n == 1:
+        unigram_table = pd.Series(Counter(corpus))
+        unigram_table.drop(['<START>','<END>'],inplace=True)
+        return unigram_table.div(unigram_table.sum())
 
-
-
-class Language_Model:
-    def __init__(self, corpus: dp.DataProcessor, tokenizer: dp.Tokenizer):
-        self.corpus = corpus.get_corpus()
-        self.tokenizer = tokenizer
-
-    def set_language(self):
-        assert isinstance(self.corpus, pd.DataFrame)
-        while True:
-            print(f'{self.corpus.iloc[0, 0]} | {self.corpus.iloc[0, 1]}')
-            user_choice = input('Please select the language with 0 or 1: ')
-            if int(user_choice) in [0, 1]:
-                break
-            else:
-                print('Please give a valid answer!')
-        self.corpus = self.corpus.iloc[:, int(user_choice)]
-        print('New Corpus \n {}'.format(self.corpus))
-
-    def get_vocabulary(self):
-        if isinstance(self.corpus, pd.DataFrame):
-            self.set_language()
-        else:
-            pass
-        tokenized_corpus = tokenize_corpus(self.corpus,self.tokenizer)
-        vocabulary = [token for token in tokenized_corpus.unique() if token != '<START>' and token != '<END>']
-        token_2_idx = {token:i for i,token in enumerate(sorted(vocabulary))}
-        print(token_2_idx)
-
-
-
-class N_Gram_Model(Language_Model):
-    def __init__(self, corpus: dp.DataProcessor, tokenizer: dp.Tokenizer, n=2):
-        super().__init__(corpus, tokenizer)
-        self.n = n
-        self.set_language()
-        self.n_gram_table = None
-
-    def create_n_gram_table(self):
-        assert isinstance(self.corpus, pd.Series)
-        organized_corpus: pd.Series = self.organize_corpus()
-        n_gram_counts: defaultdict[str, Counter] = defaultdict(Counter)
-        n_gram_index: List[str] = list(organized_corpus.unique())
+    else:
+        n_grams = defaultdict(lambda: defaultdict(int))
         i = 0
-        while True:
-            try:
-                organized_corpus.iloc[i + self.n]
-            except IndexError:
-                break
-            else:
-                if self.n == 1:
-                    n_gram_counts[organized_corpus.iloc[i]] += 1
-                    i += 1
-                elif self.n > 1:
-                    n_gram_slice = organized_corpus.iloc[i:i + self.n].tolist()
-                    assert len(n_gram_slice) == self.n
-                    n_gram_counts[' '.join(n_gram_slice[:-1])][n_gram_slice[-1]] += 1
-                    i += 1
+        while i + n <= len(corpus):
+            ngram_window = corpus[i:i+n]
+            n_grams[' '.join(ngram_window[:-1])][ngram_window[-1]] += 1
+            i += 1
 
-        if self.n == 1:
-            final_output: pd.Series = pd.Series(n_gram_counts, index=n_gram_index)
-            final_output = final_output.div(final_output.sum())
-            self.n_gram_table = final_output
-            print(self.n_gram_table)
-        else:
-            final_output: pd.DataFrame = pd.DataFrame.from_dict(n_gram_counts, orient='index', columns=n_gram_index)
-            filled_output = final_output.fillna(0)
-            filled_output = filled_output + 1
-            self.n_gram_table = filled_output.div(filled_output.sum(axis=1), axis=0)
-            print(self.n_gram_table)
+        ngram_table = pd.DataFrame.from_dict(n_grams)
+        ngram_table = ngram_table.fillna(0)
+        ngram_table = ngram_table + 1
+        return ngram_table.div(ngram_table.sum(axis=0),axis=1)
 
-    def predict(self):
-        assert self.n_gram_table is not None
-        sent = []
 
-    def create_and_predict(self):
-        self.create_n_gram_table()
-        self.predict()
+def generate(model,min_tokens:int = 3,max_tokens:int = 10) -> str:
+    if isinstance(model,pd.Series):
+        num_tokens = random.randint(min_tokens,max_tokens)
+        sentence_stack = []
+        for _ in range(num_tokens):
+            sentence_stack.append(random.choices(model.index,weights=model.values,k=1)[0])
+        return ' '.join(sentence_stack)
+
+    else:
+        sentence = ud.LinkedList()
+        sentence.add_node('<START>')
+
+
+
+
+
+
+
+processor = dp.DataProcessor()
+corpus = processor.get_corpus()
+tokenizer = dp.Tokenizer()
+create_ngrams(corpus,tokenizer,3)
+
+#/Users/justinmackie/Dropbox/Mac/Desktop/Coding Projects/Takelma Corpus Project
+#Parallel Texts
+#\w+(?:'\w+)?(?:|[--‐]+)?\w+(?:'\w+)?
+
+
+
+
+
+
+
+
+

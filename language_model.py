@@ -34,12 +34,13 @@ def generate_text(func):
         while i<sents:
             text.append(func(model,n=n))
             i += 1
+        print(text)
         return text
     return wrapper
 
 
 @generate_text
-def generate_sentence(model:nltk.lm.api.LanguageModel,n:int=10) -> List[str]:
+def generate_sentence(model:nltk.lm.api.LanguageModel,n:int=15) -> List[str]:
     assert model.vocab and model.counts, 'You need a trained model to generate a sentence!'
     context = ['<s>']*(model.order-1)
     i = 0
@@ -49,21 +50,6 @@ def generate_sentence(model:nltk.lm.api.LanguageModel,n:int=10) -> List[str]:
     print(context[model.order-1:-1])
     return context[model.order-1:-1]
 
-
-
-
-
-
-
-
-
-
-
-processor = dp.DataProcessor()
-tokenizer = dp.Tokenizer()
-corpus = processor.get_corpus()
-model = create_model(corpus,tokenizer,n=3)
-generate_sentence(model,sents=10,n=15)
 
 #/Users/justinmackie/Dropbox/Mac/Desktop/Coding Projects/Takelma Corpus Project
 #Parallel Texts

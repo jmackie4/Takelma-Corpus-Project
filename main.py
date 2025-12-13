@@ -13,8 +13,9 @@ class Hub():
     def __init__(self):
         self.processor = dp.DataProcessor()
         self.tokenizer = dp.Tokenizer()
-        self.corpus = None
-        self.set_corpus()
+        self.corpus = self.processor.get_corpus()
+        self.language_model = None
+        self.create_model()
 
     def get_processor(self):
         return self.processor
@@ -32,12 +33,30 @@ class Hub():
         assert self.corpus is not None
         return self.corpus
 
-    def set_corpus(self):
-        self.corpus = self.processor.get_corpus()
+    def set_corpus(self,new_corpus:pd.DataFrame):
+        assert isinstance(new_corpus,pd.DataFrame), 'Corpus must be a dataframe!'
+        self.corpus = new_corpus
+
+    def create_model(self):
+        while True:
+            user_num_grams = input('Please enter what kind of n-gram model you\'d like to use: ')
+            if user_num_grams == '':
+                self.language_model = lm.create_model(self.corpus,self.tokenizer)
+                break
+            else:
+                try:
+                    int(user_num_grams)
+                except ValueError:
+                    print('Please enter a valid number!')
+                self.language_model = lm.create_model(self.corpus,self.tokenizer,n=int(user_num_grams))
+                break
+
+    def get_model(self):
+        return self.language_model
+
 
     def find_token_sequence(self):
-        if self.corpus is None:
-            self.set_corpus()
+        assert self.corpus is not None, 'Can\'t find a token sequence in an empty corpus!'
         while True:
             print(f'{self.corpus.iloc[0, 0]} | {self.corpus.iloc[0, 1]}')
             user_choice = input('Please select the language with 0 or 1: ')
@@ -53,7 +72,8 @@ class Hub():
         print(self.corpus[filter])
 
 
-
+    def generate_text(self):
+        return lm.generate_text(self.language_model)
 
 
 
@@ -61,7 +81,7 @@ class Hub():
 
 if __name__ == '__main__':
     main_hub = Hub()
-    options = {'get text': main_hub.get_text,'get titles': main_hub.get_titles,'n_grams':lm.create_ngrams,
+    options = {'get text': main_hub.get_text,'get titles': main_hub.get_titles,'use n-gram model':main_hub.generate_text,
                'find sequence': main_hub.find_token_sequence}
     while True:
         for i,item in enumerate(options):

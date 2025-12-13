@@ -26,17 +26,28 @@ def create_model(corpus:pd.DataFrame,tokenizer:dp.Tokenizer,n:int=2):
     model.fit(n_grams,vocabulary)
     return model
 
-def generate_sentence(model:nltk.lm.api.LanguageModel,starting_seed=None,n:int=10) -> List[str]:
+
+def generate_text(func):
+    def wrapper(model,n=5,sents:int = 10):
+        i = 0
+        text = []
+        while i<sents:
+            text.append(func(model,n=n))
+            i += 1
+        return text
+    return wrapper
+
+
+@generate_text
+def generate_sentence(model:nltk.lm.api.LanguageModel,n:int=10) -> List[str]:
     assert model.vocab and model.counts, 'You need a trained model to generate a sentence!'
-    if starting_seed:
-        output = model.generate(num_words=n,text_seed=[starting_seed])
-    else:
-        output = model.generate(num_words=n,text_seed=['<s>'])
-
-    print(output)
-    return output
-
-
+    context = ['<s>']*(model.order-1)
+    i = 0
+    while i < n and context[-1] != '</s>':
+        context = context + [model.generate(num_words=1,text_seed=context)]
+        i += 1
+    print(context[model.order-1:-1])
+    return context[model.order-1:-1]
 
 
 
@@ -51,8 +62,8 @@ def generate_sentence(model:nltk.lm.api.LanguageModel,starting_seed=None,n:int=1
 processor = dp.DataProcessor()
 tokenizer = dp.Tokenizer()
 corpus = processor.get_corpus()
-model = create_model(corpus,tokenizer,n=2)
-generate_sentence(model,n=15)
+model = create_model(corpus,tokenizer,n=3)
+generate_sentence(model,sents=10,n=15)
 
 #/Users/justinmackie/Dropbox/Mac/Desktop/Coding Projects/Takelma Corpus Project
 #Parallel Texts

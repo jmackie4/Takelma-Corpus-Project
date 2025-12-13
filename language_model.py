@@ -34,7 +34,6 @@ def generate_text(func):
         while i<sents:
             text.append(func(model,n=n))
             i += 1
-        print(text)
         return text
     return wrapper
 
@@ -51,8 +50,6 @@ def generate_sentence(model:nltk.lm.api.LanguageModel,n:int=15) -> List[str]:
     return context[model.order-1:-1]
 
 
-#/Users/justinmackie/Dropbox/Mac/Desktop/Coding Projects/Takelma Corpus Project
-#Parallel Texts
 #\w+(?:'\w+)?(?:|[--‐]+)?\w+(?:'\w+)?
 
 

@@ -73,7 +73,7 @@ class Hub():
 
 
     def generate_text(self):
-        return lm.generate_text(self.language_model)
+        return lm.generate_sentence(self.language_model)
 
 
 

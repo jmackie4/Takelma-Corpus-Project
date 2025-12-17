@@ -131,12 +131,7 @@ class Entropy_Glosser(Glosser):
         print(entropy_slice.idxmin(axis=1))
 
 
-processor = dp.DataProcessor()
-corpus = processor.get_corpus()
-tokenizer = dp.Tokenizer()
-my_entropy = Entropy_Glosser(corpus,tokenizer)
-print(corpus.iloc[1])
-my_entropy.align_sentence(corpus.iloc[1])
+
 
 
 

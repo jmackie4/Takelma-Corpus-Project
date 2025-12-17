@@ -5,7 +5,7 @@ from collections import defaultdict,Counter
 import util_datastructs as utils
 
 def create_corpus():
-    main_path = input('Please enter the main path: ') #My personal path: /Users/justinmackie/Dropbox/Mac/Desktop/Coding Projects/Takelma Corpus Project
+    main_path = input('Please enter the main path: ')
     corpus_location = os.path.join(main_path,input('Please enter the corpus name: '))
     txt_folder_1,txt_folder_2 = input(f'Please enter the txt folder path: {os.listdir(corpus_location)}' + '\n').split(',')
     i = 0
@@ -47,7 +47,9 @@ class DataProcessor():
             else:
                 print('Please enter a valid choice!')
         user_choice = self.title_idxs[option_list[int(user_choice)]]
-        print(self.corpus.iloc[user_choice[0]:user_choice[1]])
+        text = self.corpus.iloc[user_choice[0]:user_choice[1]]
+        print(text)
+        return text
 
 class Tokenizer():
     def __init__(self):

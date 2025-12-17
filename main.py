@@ -3,8 +3,8 @@ import numpy as np
 import os,nltk,re,random
 from collections import defaultdict,Counter
 import Data_Processor as dp
-import util_datastructs as ud
 import language_model as lm
+import auto_glosser as ag
 from typing import List
 
 
@@ -15,7 +15,9 @@ class Hub():
         self.tokenizer = dp.Tokenizer()
         self.corpus = self.processor.get_corpus()
         self.language_model = None
+        self.aligner = None
         self.create_model()
+        self.create_aligner()
 
     def get_processor(self):
         return self.processor
@@ -54,6 +56,29 @@ class Hub():
     def get_model(self):
         return self.language_model
 
+    def create_aligner(self):
+        available_aligners = {i:glosser for i,glosser in enumerate({ag.Entropy_Glosser,ag.Tfidf_Glosser})}
+        while True:
+            for i,aligner in available_aligners.items():
+                print(f'{i}: {aligner}')
+            user_choice = input('Please enter your choice of aligner using an integer: ')
+            try:
+                int(user_choice) in available_aligners
+            except ValueError:
+                print('Please enter a valid integer!')
+            else:
+                break
+        self.aligner = available_aligners[int(user_choice)](self.corpus,self.tokenizer)
+
+    def get_aligner(self):
+        return self.aligner
+
+    def align_text(self):
+        assert self.aligner is not None, 'You need to set an aligner first before you start aligning stuff!!!'
+        user_text = self.processor.get_text()
+        for _,row in user_text.iterrows():
+            self.aligner.align_sentence(row)
+
 
     def find_token_sequence(self):
         assert self.corpus is not None, 'Can\'t find a token sequence in an empty corpus!'
@@ -81,8 +106,11 @@ class Hub():
 
 if __name__ == '__main__':
     main_hub = Hub()
-    options = {'get text': main_hub.get_text,'get titles': main_hub.get_titles,'use n-gram model':main_hub.generate_text,
-               'find sequence': main_hub.find_token_sequence}
+    options = {'get text': main_hub.get_text,'get titles': main_hub.get_titles,
+               'use n-gram model':main_hub.generate_text,
+               'find sequence': main_hub.find_token_sequence,
+               'use_aligner': main_hub.align_text,
+               }
     while True:
         for i,item in enumerate(options):
             print(f'{i}: {item}',end='\n')

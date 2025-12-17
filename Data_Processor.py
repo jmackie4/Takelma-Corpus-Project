@@ -61,7 +61,7 @@ class Tokenizer():
         user_pattern = input('Please enter your pattern: ')
         self.pattern = re.compile(r'''{}'''.format(user_pattern))
         print(r'''{}'''.format(user_pattern))
-        self.tokenizer = nltk.RegexpTokenizer(user_pattern) #My specific pattern \w+(?:'\w+)?(?:|[--‐]+)?\w+(?:'\w+)?
+        self.tokenizer = nltk.RegexpTokenizer(user_pattern)
 
     def tokenize(self,text):
         return ' '.join(self.tokenizer.tokenize(text.lower()))

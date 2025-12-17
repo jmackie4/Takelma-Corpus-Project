@@ -13,6 +13,7 @@ In order to use TCP, you'll need to make sure the corpus of parallel texts meets
 2. The corpus of parallel texts you want to use with TCP must be a directory (folder) with two sub-directories in it. In addition, the two sub-directories must meet some requirements:
 4. The sub-directories must contain the same number of plaintext files, and the plaintext files must have the same names between the two sub-directories
 5. The files within a sub-directory must all be written in the same language
+6. A regular expression pattern to give TCP that'll tokenize the source language!
 
 And that's all when it comes to making sure your corpus of parallel texts can be processed correctly by TCP! 
 

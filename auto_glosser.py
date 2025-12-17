@@ -105,10 +105,38 @@ class Tfidf_Glosser(Glosser):
 
 
 
+class Entropy_Glosser(Glosser):
+    def __init__(self,corpus:pd.DataFrame,tokenizer:dp.Tokenizer) -> None:
+        super().__init__(corpus,tokenizer)
+        self.entropy_table = None
+        self.set_entropy_table()
+        print(self.entropy_table)
+
+    def set_entropy_table(self):
+        assert self.vocabularies is not None, 'You must create vocabularies first!'
+        assert self.gloss_table is not None, 'You must create a gloss table first!'
+        smoothed_table = self.gloss_table + 1
+        probability_table = smoothed_table.div(self.gloss_table.sum(axis=1),axis=0)
+        entropy_table = np.log2(probability_table)
+        self.entropy_table = entropy_table * -1
 
 
+    def align_sentence(self,sentence:pd.Series) -> List[Tuple[str,str]]:
+        nlp = spacy.load('en_core_web_sm')
+        tag_filter = {'PRP', 'PRP$', 'PUNCT', 'ADP', 'DT'}
+        tokenized_source = self.tokenizer.tokenize(sentence.iloc[0]).split(' ')
+        tokenized_target = [token.lemma_.lower() for token in nlp(sentence.iloc[1]) if token.tag_ not in tag_filter
+                            and not token.is_punct]
+        entropy_slice = self.entropy_table.loc[tokenized_source, tokenized_target]
+        print(entropy_slice.idxmin(axis=1))
 
 
+processor = dp.DataProcessor()
+corpus = processor.get_corpus()
+tokenizer = dp.Tokenizer()
+my_entropy = Entropy_Glosser(corpus,tokenizer)
+print(corpus.iloc[1])
+my_entropy.align_sentence(corpus.iloc[1])
 
 
 

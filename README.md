@@ -27,6 +27,42 @@ Also make sure that you have all the necessary dependencies installed, you can f
 ```
 python 'your/specific/path/Takelma Corpus Project'
 ```
+2. You'll then see this prompt, insert the path to the directory that holds your corpus!
+```angular2html
+Please enter the main path that holds the corpus:
+```
+3. The next step will be to type in the names of the directories that hold the texts you want to use! Make sure you separate them by comma and type them exactly as they appear on the screen!
+```
+Please enter the names of the folders that hold the texts:
+```
+4. Next you'll need to provide TCP with your regex pattern so that it can tokenize the sentences in the non-English language!
+```angular2html
+Please enter your regex pattern:
+```
+5. Now you'll need to state what kind of n-gram model you want to create by giving a number! Try to keep it below 5 tho...
+```angular2html
+Please enter what kind of n-gram model you'd like to make by giving a number:
+```
+6. Then you need to set which language you want to use, please make sure to set this option to the non-English language!
+```angular2html
+Please choose which language you want to use using 0 or 1:
+```
+7. Now it's time to choose your aligner! Again, use a number to pick which aligner you want. For now, I suggest the entropy aligner!
+```angular2html
+Please enter your choice of aligner using the integer associated with the aligner: 
+```
 
+After all of that you'll finally be at the main menu! Here you'll want to just type out what you want to do given the options. Make sure you spell the options correctly, so try to just copy and paste the options!
+```angular2html
+0: get text
+1: get titles
+2: use n-gram model
+3: find sequence
+4: use aligner
+Please enter what you want to do:
+```
+**Now if you want to exit out of TCP, just make sure you're on the main menu and type exit!!!**
+
+Once you type out your option, just follow the interactive menu like how you did to setup TCP and enjoy! Once you do an action, you'll be sent back to the main menu!
 
    

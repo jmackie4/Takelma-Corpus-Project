@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 import os, nltk, re, random
 from collections import defaultdict, Counter
-import Data_Processor as dp
-import util_datastructs as ud
+from . import Data_Processor as dp
+from . import util_datastructs as ud
 from typing import List
 from nltk.util import ngrams,everygrams
 from nltk.lm import MLE,StupidBackoff

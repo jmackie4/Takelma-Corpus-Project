@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import nltk,os,re
 from collections import defaultdict,Counter
-import util_datastructs as utils
+from . import util_datastructs
 
 def create_corpus():
     corpus_location = input('Please enter the main path that holds the corpus: ')

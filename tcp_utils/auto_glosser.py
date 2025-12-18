@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import nltk, spacy
-import Data_Processor as dp
+from . import Data_Processor as dp
 from typing import Tuple,List
 from nltk.lm.preprocessing import flatten
 from nltk.lm.vocabulary import Vocabulary

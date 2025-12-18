@@ -12,7 +12,7 @@ from nltk.lm.preprocessing import pad_sequence,pad_both_ends,flatten,padded_ever
 def create_model(corpus:pd.DataFrame,tokenizer:dp.Tokenizer,n:int=2):
     while True:
         print(f'{corpus.iloc[0, 0]} | {corpus.iloc[0, 1]}')
-        user_choice = input('Please choose one of the following options: ')
+        user_choice = input('Please choose which language you want to use using 0 or 1: ')
         try:
             int(user_choice) in [0,1]
         except ValueError:

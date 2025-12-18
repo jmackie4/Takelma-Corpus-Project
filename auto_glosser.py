@@ -110,7 +110,6 @@ class Entropy_Glosser(Glosser):
         super().__init__(corpus,tokenizer)
         self.entropy_table = None
         self.set_entropy_table()
-        print(self.entropy_table)
 
     def set_entropy_table(self):
         assert self.vocabularies is not None, 'You must create vocabularies first!'

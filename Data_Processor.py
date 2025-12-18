@@ -5,9 +5,8 @@ from collections import defaultdict,Counter
 import util_datastructs as utils
 
 def create_corpus():
-    main_path = input('Please enter the main path: ')
-    corpus_location = os.path.join(main_path,input('Please enter the corpus name: '))
-    txt_folder_1,txt_folder_2 = input(f'Please enter the txt folder path: {os.listdir(corpus_location)}' + '\n').split(',')
+    corpus_location = input('Please enter the main path that holds the corpus: ')
+    txt_folder_1,txt_folder_2 = input(f'Please enter the names of the folders that hold the texts: {os.listdir(corpus_location)}' + '\n').split(',')
     i = 0
     texts = {}
     title_idxs = {}
@@ -58,9 +57,8 @@ class Tokenizer():
         self.set_tokenizer()
 
     def set_tokenizer(self):
-        user_pattern = input('Please enter your pattern: ')
+        user_pattern = input('Please enter your regex pattern: ')
         self.pattern = re.compile(r'''{}'''.format(user_pattern))
-        print(r'''{}'''.format(user_pattern))
         self.tokenizer = nltk.RegexpTokenizer(user_pattern)
 
     def tokenize(self,text):

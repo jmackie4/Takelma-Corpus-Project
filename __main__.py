@@ -41,7 +41,7 @@ class Hub():
 
     def create_model(self):
         while True:
-            user_num_grams = input('Please enter what kind of n-gram model you\'d like to use: ')
+            user_num_grams = input('Please enter what kind of n-gram model you\'d like to make by giving a number: ')
             if user_num_grams == '':
                 self.language_model = lm.create_model(self.corpus,self.tokenizer)
                 break
@@ -61,7 +61,7 @@ class Hub():
         while True:
             for i,aligner in available_aligners.items():
                 print(f'{i}: {aligner}')
-            user_choice = input('Please enter your choice of aligner using an integer: ')
+            user_choice = input('Please enter your choice of aligner using the integer associated with the aligner: ')
             try:
                 int(user_choice) in available_aligners
             except ValueError:
@@ -109,12 +109,12 @@ if __name__ == '__main__':
     options = {'get text': main_hub.get_text,'get titles': main_hub.get_titles,
                'use n-gram model':main_hub.generate_text,
                'find sequence': main_hub.find_token_sequence,
-               'use_aligner': main_hub.align_text,
+               'use aligner': main_hub.align_text,
                }
     while True:
         for i,item in enumerate(options):
             print(f'{i}: {item}',end='\n')
-        users_choice = input('Please enter your choice: ')
+        users_choice = input('Please enter what you want to do: ')
         if users_choice.lower() in options :
             options[users_choice.lower()]()
         elif users_choice.lower() == 'exit':

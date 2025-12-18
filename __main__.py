@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 import os,nltk,re,random
 from collections import defaultdict,Counter
-import Data_Processor as dp
-import language_model as lm
-import auto_glosser as ag
+from tcp_utils import Data_Processor as dp
+from tcp_utils import language_model as lm
+from tcp_utils import auto_glosser as ag
 from typing import List
 
 

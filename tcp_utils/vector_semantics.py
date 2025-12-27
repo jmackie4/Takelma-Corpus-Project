@@ -2,12 +2,9 @@ import os
 
 import numpy as np
 import pandas as pd
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import NearestNeighbors
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.base import BaseEstimator,TransformerMixin
-from nltk.lm.preprocessing import flatten
-from nltk.lm.vocabulary import Vocabulary
 from typing import List
 
 def process_text(text:pd.Series) -> str:
@@ -18,7 +15,7 @@ def process_text(text:pd.Series) -> str:
 
 def create_vocabulary(corpus:pd.Series):
     #Assumes corpus is tokenized with tokens being separated by whitespace
-    assert isinstance(corpus,pd.Series), 'Text must be a pandas dataframe!'
+    assert isinstance(corpus,pd.Series), 'Text must be a pandas series object!'
     processed_corpus = process_text(corpus)
     vocabulary = {i:token for i,token in enumerate(sorted(set(processed_corpus.split())))}
     return vocabulary
@@ -32,7 +29,7 @@ def create_generator(corpus:pd.Series):
 def create_TFIDF_KNN(corpus:pd.Series,):
     context_generator = create_generator(corpus)
     vocab_contexts = [item for item in context_generator]
-    pipeline_parts = [('vectorizer',TfidfVectorizer()),('knn',KNeighborsClassifier())]
+    pipeline_parts = [('vectorizer',TfidfVectorizer()),('knn',NearestNeighbors())]
     pipeline = Pipeline(pipeline_parts)
     return pipeline.fit(vocab_contexts)
 
@@ -58,7 +55,7 @@ class Vector_Semantics:
         temp_tfidf = TfidfVectorizer()
 
         #now I get the tfidf matrix of the corpus so I can pick out the necessary vectors
-        tfidf_matrix = temp_tfidf.fit_transform(temp_vocabulary)
+        tfidf_matrix = temp_tfidf.fit_transform(temp_vocabulary).toarray()
         assert isinstance(tfidf_matrix,np.ndarray)
         input_slice = tfidf_matrix[token_idxs]
         output = self.model.named_steps['knn'].kneighbors(input_slice)

@@ -1,73 +1,71 @@
 import pandas as pd
-import numpy as np
 import nltk,os,re
-from collections import defaultdict,Counter
-from . import util_datastructs
+from sklearn.base import BaseEstimator, TransformerMixin
+import spacy
+from typing import Dict
 
-def create_corpus():
-    corpus_location = input('Please enter the main path that holds the corpus: ')
-    txt_folder_1,txt_folder_2 = input(f'Please enter the names of the folders that hold the texts: {os.listdir(corpus_location)}' + '\n').split(',')
-    i = 0
-    texts = {}
-    title_idxs = {}
-    for file in os.listdir(os.path.join(corpus_location,txt_folder_1)):
-        with open(os.path.join(corpus_location,txt_folder_1,file),'r',encoding='utf-8') as f:
-            lang_1 = [line[:-1] for line in f.readlines()]
+class Tokenizer_Transformer(BaseEstimator, TransformerMixin):
+    def __init__(self, pattern: str = None):
+        self._pattern = pattern
+        self._nlp = spacy.load('en_core_web_sm')
+        self._tag_filter = {'PRP', 'PRP$', 'PUNCT', 'ADP', 'DT'}
 
-        with open(os.path.join(corpus_location,txt_folder_2,file),'r',encoding='utf-8') as f:
-            lang_2 = [line[:-1] for line in f.readlines()]
+    def fit(self, X, y=None):
+        if self.pattern is not None:
+            self.tokenizer_ = nltk.RegexpTokenizer(self.pattern)
+        else:
+            pass
 
-        assert len(lang_1) == len(lang_2)
-        texts[file[:-4]] = pd.DataFrame({'lang 1':lang_1,'lang 2':lang_2})
-        title_idxs[file[:-4]] = (i,i+len(lang_1))
-        i += len(lang_1)
+        return self
 
-    final_dataframe = pd.concat(texts.values())
-    return final_dataframe,title_idxs
+    def transform(self, X: pd.DataFrame):
+        X.iloc[:,0] = X.iloc[:, 0].apply(lambda x: ' '.join(self.tokenizer_.tokenize(x.lower())))
+        X.iloc[:,1] = X.iloc[:, 1].apply(lambda x: [token.lemma_.lower() for token in self._nlp(x)
+                                                         if token.tag_ not in self._tag_filter and not
+                                                         token.is_punct])
+        return X
 
-class DataProcessor():
+
+#The following just takes a root folder that holds the two directories for the parallel texts
+#and it returns a dictionary that has the source language dir path and target language dir path
+#I still need to add a wrapper that allows you to feed the root path into the transformer
+class Corpus_Transformer(BaseEstimator, TransformerMixin):
     def __init__(self):
-        self.corpus,self.title_idxs = create_corpus()
+        pass
 
-    def get_titles(self):
-        return list(self.title_idxs.keys())
+    def fit(self, X, y=None):
+        return self
 
-    def get_corpus(self):
-        return self.corpus
+    def transform(self, X: str):
+        with os.scandir(X) as entries:
+            text_directories = [entry.name for entry in entries if entry.is_dir()]
 
-    def get_text(self):
+        output_dict = {}
         while True:
-            option_list = {i:key for i,key in enumerate(list(self.title_idxs.keys()))}
-            for item in option_list.items():
-                print(f'{item[0]}: {item[1]}',end='\n')
-            user_choice = input('Please enter your choice by giving a number: ')
-            if int(user_choice) in option_list:
+            print(text_directories)
+            user_choice = input(
+                'Please pick which directory is the source language! Type the name exactly as you see it!')
+            if user_choice in text_directories:
                 break
             else:
-                print('Please enter a valid choice!')
-        user_choice = self.title_idxs[option_list[int(user_choice)]]
-        text = self.corpus.iloc[user_choice[0]:user_choice[1]]
-        print(text)
-        return text
+                print('Please try again!')
+        output_dict['source_language'] = os.path.join(X, user_choice)
+        text_directories.remove(user_choice)
+        output_dict['target_language'] = os.path.join(X, text_directories[0])
+        return output_dict
 
-class Tokenizer():
+
+class Corpus_Loader(BaseEstimator, TransformerMixin):
     def __init__(self):
-        self.tokenizer = None
-        self.pattern = None
-        self.set_tokenizer()
+        pass
+    def fit(self, X, y=None):
+        return self
 
-    def set_tokenizer(self):
-        user_pattern = input('Please enter your regex pattern: ')
-        self.pattern = re.compile(r'''{}'''.format(user_pattern))
-        self.tokenizer = nltk.RegexpTokenizer(user_pattern)
-
-    def tokenize(self,text):
-        return ' '.join(self.tokenizer.tokenize(text.lower()))
-
-
-
-
-
+    def transform(self,X:Dict[str,str]):
+        ''' This corpus loader transformer needs to be with the Corpus transformer object in a
+        pipeline in order to work!'''
+        for file in os.listdir(X['source_language']):
+            with open(os.path.join(X['source_language'],file),'r',encoding='utf-8') as f:
 
 
 

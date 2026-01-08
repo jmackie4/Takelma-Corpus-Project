@@ -5,8 +5,7 @@ from . import Data_Processor as dp
 from typing import Tuple,List
 from nltk.lm.preprocessing import flatten
 from nltk.lm.vocabulary import Vocabulary
-
-
+from sklearn.base import BaseEstimator,TransformerMixin
 
 def get_vocabularies(corpus:pd.DataFrame,tokenizer:dp.Tokenizer) -> Tuple[nltk.lm.Vocabulary,nltk.lm.Vocabulary]:
     nlp = spacy.load('en_core_web_sm')
@@ -128,10 +127,6 @@ class Entropy_Glosser(Glosser):
                             and not token.is_punct]
         entropy_slice = self.entropy_table.loc[tokenized_source, tokenized_target]
         print(entropy_slice.idxmin(axis=1))
-
-
-
-
 
 
 

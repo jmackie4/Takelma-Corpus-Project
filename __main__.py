@@ -3,18 +3,48 @@ from tcp_utils import Data_Processor as dp
 from tcp_utils import language_model as lm
 from tcp_utils import auto_glosser as ag
 from tcp_utils import vector_semantics as vs
+from nltk.lm.preprocessing import flatten
+from nltk.lm.vocabulary import Vocabulary
+
 
 
 
 class Hub():
     def __init__(self):
-        self.processor = dp.DataProcessor()
-        self.tokenizer = dp.Tokenizer()
-        self.corpus = self.processor.get_corpus()
+        self.corpus,self.title_idxs = dp.create_corpus()
+        self.create_tokenized_corpus()
+        self.create_vocabularies()
+        self.create_concordances()
         self.language_model = self.create_model()
         self.aligner = self.create_aligner()
         self.vector_space = self.create_vector_space()
 
+
+#Constructor Setup Block of Hub Object
+    def create_tokenized_corpus(self):
+        assert self.corpus is not None, 'Cannot create the necessary tokenized corpus since there\'s no corpus to tokenize!'
+        while True:
+            user_pattern = input('Please enter your regular expression pattern for tokenization:\n')
+            if user_pattern == '':
+                print('Please enter a regular expression pattern and not an empty string!')
+            else:
+                break
+        tokenizer = dp.Tokenizer_Transformer(pattern=user_pattern)
+        self._tokenized_corpus = tokenizer.transform(self.corpus)
+
+    def create_vocabularies(self):
+        source_vocab_obj = Vocabulary(' '.join(self._tokenized_corpus.iloc[:,0].values).split())
+        target_vocab_obj = Vocabulary(' '.join(self._tokenized_corpus.iloc[:,1].values).split())
+        self.source_vocab,self.target_vocab = list(source_vocab_obj.keys()),list(target_vocab_obj.keys())
+
+    def create_concordances(self):
+        source_concordances = {}
+        target_concordances = {}
+        for token in self.source_vocab:
+            source_concordances[token] = self._tokenized_corpus[self._tokenized_corpus.iloc[:,0].str.contains(token)].index.tolist()
+        for token in self.target_vocab:
+            target_concordances[token] = self._tokenized_corpus[self._tokenized_corpus.iloc[:,1].str.contains(token)].index.tolist()
+        self.source_concordances,self.target_concordances = source_concordances,target_concordances
 
 #Main Block of Hub Object
     def get_processor(self):

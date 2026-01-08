@@ -75,7 +75,7 @@ def create_corpus():
     corpus_dataframe = pd.DataFrame({'source_language': pipeline_output['source_sents'],
                                      'target_language': pipeline_output['target_sents'],
                                      })
-    return corpus_dataframe
+    return corpus_dataframe,pipeline_output['text_idxs']
 
 
 

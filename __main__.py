@@ -1,4 +1,5 @@
 import pandas as pd
+import nltk,re
 from tcp_utils import Data_Processor as dp
 from tcp_utils import language_model as lm
 from tcp_utils import auto_glosser as ag
@@ -30,20 +31,22 @@ class Hub():
             else:
                 break
         tokenizer = dp.Tokenizer_Transformer(pattern=user_pattern)
-        self._tokenized_corpus = tokenizer.transform(self.corpus)
+        self._tokenized_corpus = dp.tokenizer.fit_transform(self.corpus)
 
     def create_vocabularies(self):
         source_vocab_obj = Vocabulary(' '.join(self._tokenized_corpus.iloc[:,0].values).split())
         target_vocab_obj = Vocabulary(' '.join(self._tokenized_corpus.iloc[:,1].values).split())
-        self.source_vocab,self.target_vocab = list(source_vocab_obj.keys()),list(target_vocab_obj.keys())
+        self.source_vocab,self.target_vocab = list(source_vocab_obj.counts.keys()),list(target_vocab_obj.counts.keys())
 
     def create_concordances(self):
         source_concordances = {}
         target_concordances = {}
         for token in self.source_vocab:
-            source_concordances[token] = self._tokenized_corpus[self._tokenized_corpus.iloc[:,0].str.contains(token)].index.tolist()
+            # Escape special regex characters in the token
+            source_concordances[token] = self._tokenized_corpus[self._tokenized_corpus.iloc[:,0].str.contains(re.escape(token), regex=True)].index.tolist()
         for token in self.target_vocab:
-            target_concordances[token] = self._tokenized_corpus[self._tokenized_corpus.iloc[:,1].str.contains(token)].index.tolist()
+            # Escape special regex characters in the token
+            target_concordances[token] = self._tokenized_corpus[self._tokenized_corpus.iloc[:,1].str.contains(re.escape(token), regex=True)].index.tolist()
         self.source_concordances,self.target_concordances = source_concordances,target_concordances
 
 #Main Block of Hub Object
@@ -63,7 +66,7 @@ class Hub():
             else:
                 print('Please enter a valid number! The one you provided is not in the list of possible numbers!')
         title_idxs = self.title_idxs[idx_2_title[int(user_choice)]]
-        print(self.corpus.iloc[title_idxs,:])
+        print(self.corpus.iloc[title_idxs[0]:title_idxs[1],:])
 
 
 
@@ -94,8 +97,10 @@ class Hub():
 
         sents = self._tokenized_corpus.iloc[:, int(user_choice)]
         user_sequence = input('Please enter your sequence: ')
-        filter = sents.str.contains(user_sequence.lower(), case=False)
+        # Escape special regex characters in the user sequence if it's meant as a literal string
+        filter = sents.str.contains(re.escape(user_sequence.lower()), regex=True, case=False)
         print(self.corpus[filter])
+
 
 
 #N-Gram Block of the Hub Object

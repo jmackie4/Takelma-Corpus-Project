@@ -47,25 +47,40 @@ class Hub():
         self.source_concordances,self.target_concordances = source_concordances,target_concordances
 
 #Main Block of Hub Object
-    def get_processor(self):
-        return self.processor
+    def get_text(self) -> None:
+        idx_2_title = {i:title for i,title in enumerate(self.title_idxs)}
+        for key,item in idx_2_title.items():
+            print(f'{key}: {item}')
+        while True:
+            user_choice = input('Please select the text you would like to display using a number:\n')
+            try:
+                int(user_choice)
+            except ValueError:
+                print('Please enter a valid number and not an empty string or a series of characters!')
 
-    def get_tokenizer(self):
-        return self.tokenizer
+            if int(user_choice) in idx_2_title:
+                break
+            else:
+                print('Please enter a valid number! The one you provided is not in the list of possible numbers!')
+        title_idxs = self.title_idxs[idx_2_title[int(user_choice)]]
+        print(self.corpus.iloc[title_idxs,:])
 
-    def get_text(self):
-        self.processor.get_text()
 
-    def get_titles(self):
-        self.processor.get_titles()
 
-    def get_corpus(self):
-        assert self.corpus is not None
-        return self.corpus
+    def get_titles(self) -> None:
+        for title in self.title_idxs.keys():
+            print(title)
+
+
 
     def set_corpus(self,new_corpus:pd.DataFrame):
         assert isinstance(new_corpus,pd.DataFrame), 'Corpus must be a dataframe!'
         self.corpus = new_corpus
+        self.create_tokenized_corpus()
+        self.create_vocabularies()
+        self.create_concordances()
+
+
 
     def find_token_sequence(self):
         assert self.corpus is not None, 'Can\'t find a token sequence in an empty corpus!'
@@ -77,8 +92,7 @@ class Hub():
             else:
                 print('Please give a valid answer!')
 
-        sents = self.corpus.iloc[:, int(user_choice)]
-        sents.apply(lambda x: self.tokenizer.tokenize(x))
+        sents = self._tokenized_corpus.iloc[:, int(user_choice)]
         user_sequence = input('Please enter your sequence: ')
         filter = sents.str.contains(user_sequence.lower(), case=False)
         print(self.corpus[filter])

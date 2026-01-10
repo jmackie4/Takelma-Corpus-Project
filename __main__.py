@@ -97,7 +97,6 @@ class Hub():
 
         sents = self._tokenized_corpus.iloc[:, int(user_choice)]
         user_sequence = input('Please enter your sequence: ')
-        # Escape special regex characters in the user sequence if it's meant as a literal string
         filter = sents.str.contains(re.escape(user_sequence.lower()), regex=True, case=False)
         print(self.corpus[filter])
 

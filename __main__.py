@@ -108,14 +108,15 @@ class Hub():
         while True:
             user_num_grams = input('Please enter what kind of n-gram model you\'d like to make by giving a number: ')
             if user_num_grams == '':
-                self.language_model = lm.create_model(self.corpus,self.tokenizer)
+                self.language_model = lm.create_model(self._tokenized_corpus)
                 break
             else:
                 try:
                     int(user_num_grams)
                 except ValueError:
                     print('Please enter a valid number!')
-                return lm.create_model(self.corpus,self.tokenizer,n=int(user_num_grams))
+                else:
+                    self.language_model = lm.create_model(self._tokenized_corpus)
 
 
     def get_model(self):

@@ -9,7 +9,7 @@ from nltk.util import ngrams,everygrams
 from nltk.lm import MLE,StupidBackoff
 from nltk.lm.preprocessing import pad_sequence,pad_both_ends,flatten,padded_everygram_pipeline
 
-def create_model(corpus:pd.DataFrame,tokenizer:dp.Tokenizer,n:int=2):
+def create_model(corpus:pd.DataFrame,n:int=2):
     while True:
         print(f'{corpus.iloc[0, 0]} | {corpus.iloc[0, 1]}')
         user_choice = input('Please choose which language you want to use for the ngram model using 0 or 1: ')
@@ -20,8 +20,7 @@ def create_model(corpus:pd.DataFrame,tokenizer:dp.Tokenizer,n:int=2):
         else:
             break
     user_language = corpus.iloc[:,int(user_choice)]
-    tokenized_corpus = user_language.apply(lambda x: tokenizer.tokenize(x).split(' '))
-    n_grams,vocabulary = padded_everygram_pipeline(n,tokenized_corpus.tolist())
+    n_grams,vocabulary = padded_everygram_pipeline(n,user_language.tolist())
     model = StupidBackoff(order=n)
     model.fit(n_grams,vocabulary)
     return model

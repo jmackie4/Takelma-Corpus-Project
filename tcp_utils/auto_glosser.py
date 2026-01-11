@@ -1,10 +1,6 @@
 import pandas as pd
 import numpy as np
-import nltk, spacy
-from . import Data_Processor as dp
-from typing import Tuple,List,Dict
-from nltk.lm.preprocessing import flatten
-from nltk.lm.vocabulary import Vocabulary
+from typing import Dict
 from sklearn.base import BaseEstimator,TransformerMixin
 from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
 

@@ -4,8 +4,8 @@ from tcp_utils import Data_Processor as dp
 from tcp_utils import language_model as lm
 from tcp_utils import auto_glosser as ag
 from tcp_utils import vector_semantics as vs
-from nltk.lm.preprocessing import flatten
 from nltk.lm.vocabulary import Vocabulary
+from sklearn.pipeline import Pipeline
 
 
 
@@ -132,22 +132,28 @@ class Hub():
             for i,aligner in available_aligners.items():
                 print(f'{i}: {aligner}')
             user_choice = input('Please enter your choice of aligner using the integer associated with the aligner: ')
-            try:
-                int(user_choice) in available_aligners
-            except ValueError:
-                print('Please enter a valid integer!')
-            else:
+            if int(user_choice) in available_aligners:
                 break
-        return available_aligners[int(user_choice)](self.corpus,self.tokenizer)
+            else:
+                print('Please enter a valid integer!')
+
+        if int(user_choice) == 0:
+            pipeline = Pipeline([('tfidf maker',ag.tf_idf_maker()),
+                                 ('tfidf glosser',ag.tfidf_glosser())])
+            self.aligner = pipeline.fit(self.source_concordances)
+
+        elif int(user_choice) == 1:
+            self.aligner = ag.entropy_glosser.fit(self.source_concordances)
+
 
     def get_aligner(self):
         return self.aligner
 
     def align_text(self):
         assert self.aligner is not None, 'You need to set an aligner first before you start aligning stuff!!!'
-        user_text = self.processor.get_text()
+        user_text = self.get_text()
         for _,row in user_text.iterrows():
-            self.aligner.align_sentence(row)
+            print(self.aligner.align_sentence(row))
 
 
 #Vector Semantic Block of Hub Object
@@ -160,7 +166,7 @@ class Hub():
                 break
             else:
                 print('Please enter a valid choice!')
-        tokenized_corpus = self.corpus.iloc[:,int(user_choice)].apply(lambda x: self.tokenizer.tokenize(x))
+        tokenized_corpus = self._tokenized_corpus.iloc[:,int(user_choice)]
         return vs.Vector_Semantics(tokenized_corpus)
 
     def get_neighbors(self):

@@ -1,63 +1,51 @@
 import pandas as pd
 import numpy as np
 from typing import Dict
-from sklearn.base import BaseEstimator,TransformerMixin
+from sklearn.base import BaseEstimator
 from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
 
-class tf_idf_maker(BaseEstimator,TransformerMixin):
-    def __init__(self):
-        self.model = TfidfVectorizer()
-
-    def fit(self,X,y=None):
-        return self
-
-    def transform(self,X:Dict[str,pd.DataFrame]):
-        corpus = []
-        token_2_idx = {token:idx for idx,token in enumerate(X.keys())}
-        for token in X.keys():
-            corpus.append([set(row.iloc[:,1].split()) for row in X[token].iterrows()])
-        scipy_matrix = self.model.fit_transform(corpus)
-        return pd.DataFrame.sparse.from_spmatrix(scipy_matrix)
+def df_slice_to_string(dataframe:pd.DataFrame) -> str:
+    return ' '.join(dataframe.iloc[:,1].values.tolist())
 
 class tfidf_glosser(BaseEstimator):
     def __init__(self):
         pass
 
-    def fit(self,X,y=None):
-        self.model = X
+    def fit(self,X:Dict[str,pd.DataFrame],y=None):
+        concordance_list = [df_slice_to_string(X[key]) for key in X.keys()]
+        vectorizer = TfidfVectorizer()
+        tfidf_matrix = vectorizer.fit_transform(concordance_list)
+        self.model_ = pd.DataFrame.sparse.from_spmatrix(tfidf_matrix,index=list(X.keys()), columns=vectorizer.get_feature_names_out())
         return self
 
+
     def predict(self,X:pd.Series):
-        model_slice = self.model.loc[list(set(X.iloc[:,0].split())),list(set(X.iloc[:,1].split()))]
+        indexes = list(set(X.iloc[0].split()))
+        columns = [token for token in X.iloc[1].split() if token in self.model_.columns]
+        model_slice = self.model_.loc[indexes,columns]
+        model_slice = model_slice.sparse.to_dense()
         return model_slice.idxmax(axis=1)
 
 
 class entropy_glosser(BaseEstimator):
     def __init__(self):
-        self.model = CountVectorizer()
+        pass
 
-    def fit(self,X):
-        corpus = []
-        token_2_idx = {token: idx for idx, token in enumerate(X.keys())}
-        for token in X.keys():
-            df = X[token]
-            for _,row in df.iterrows():
-                corpus.append(' '.join(set(row.iloc[1].split())))
-        count_table = self.model.fit_transform(corpus)
-        count_table = pd.DataFrame.sparse.from_spmatrix(count_table)
-        count_table = count_table + 1
-        count_table.div(count_table.sum(axis=1), axis=0)
-        entropy_table = np.log(count_table)
-        self.entropy_table_ = entropy_table * -1
+    def fit(self, X: Dict[str, pd.DataFrame], y=None):
+        concordance_list = [df_slice_to_string(X[key]) for key in X.keys()]
+        vectorizer = CountVectorizer()
+        tfidf_matrix = vectorizer.fit_transform(concordance_list)
+        frequency_table = pd.DataFrame.sparse.from_spmatrix(tfidf_matrix, index=list(X.keys()),
+                                                            columns=vectorizer.get_feature_names_out())
+        frequency_table = frequency_table.sparse.to_dense()
+        frequency_table = frequency_table + 1
+        probability_table = frequency_table.div(frequency_table.sum(axis=1), axis=0)
+        entropy_table = np.log2(probability_table)
+        self.model_ = entropy_table * -1
         return self
 
-    def predict(self,X:pd.Series):
-        model_slice = self.entropy_table_.loc[list(set(X.iloc[:, 0].split())), list(set(X.iloc[:, 1].split()))]
-        return model_slice.idxmax(axis=1)
-
-
-
-
-
-
-
+    def predict(self, X: pd.Series):
+        indexes = list(set(X.iloc[0].split()))
+        columns = [token for token in X.iloc[1].split() if token in self.model_.columns]
+        model_slice = self.model_.loc[indexes, columns]
+        return model_slice.idxmin(axis=1)

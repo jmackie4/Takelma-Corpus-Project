@@ -1,5 +1,5 @@
 import pandas as pd
-import nltk,os,re
+import nltk,os
 from sklearn.base import BaseEstimator, TransformerMixin
 import spacy
 from typing import Dict

@@ -1,13 +1,8 @@
 import pandas as pd
-import numpy as np
-import os, nltk, re, random
-from collections import defaultdict, Counter
-from . import Data_Processor as dp
-from . import util_datastructs as ud
+import nltk
 from typing import List
-from nltk.util import ngrams,everygrams
 from nltk.lm import MLE,StupidBackoff
-from nltk.lm.preprocessing import pad_sequence,pad_both_ends,flatten,padded_everygram_pipeline
+from nltk.lm.preprocessing import padded_everygram_pipeline
 
 def create_model(corpus:pd.DataFrame,n:int=2):
     while True:
@@ -20,6 +15,7 @@ def create_model(corpus:pd.DataFrame,n:int=2):
         else:
             break
     user_language = corpus.iloc[:,int(user_choice)]
+    user_language = user_language.apply(lambda x: x.split())
     n_grams,vocabulary = padded_everygram_pipeline(n,user_language.tolist())
     model = StupidBackoff(order=n)
     model.fit(n_grams,vocabulary)
@@ -49,7 +45,7 @@ def generate_sentence(model:nltk.lm.api.LanguageModel,n:int=15) -> List[str]:
     return context[model.order-1:-1]
 
 
-#\w+(?:'\w+)?(?:|[--‐]+)?\w+(?:'\w+)?
+
 
 
 

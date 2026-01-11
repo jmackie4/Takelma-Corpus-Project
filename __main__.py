@@ -5,7 +5,6 @@ from tcp_utils import language_model as lm
 from tcp_utils import auto_glosser as ag
 from tcp_utils import vector_semantics as vs
 from nltk.lm.vocabulary import Vocabulary
-from sklearn.pipeline import Pipeline
 
 
 
@@ -16,8 +15,8 @@ class Hub():
         self.create_tokenized_corpus()
         self.create_vocabularies()
         self.create_concordances()
-        self.language_model = self.create_model()
-        self.aligner = self.create_aligner()
+        self.create_model()
+        self.create_aligner()
         self.vector_space = self.create_vector_space()
 
 
@@ -67,12 +66,12 @@ class Hub():
                 print('Please enter a valid number! The one you provided is not in the list of possible numbers!')
         title_idxs = self.title_idxs[idx_2_title[int(user_choice)]]
         print(self.corpus.iloc[title_idxs[0]:title_idxs[1],:])
-
+        return self.corpus.iloc[title_idxs[0]:title_idxs[1],:]
 
 
     def get_titles(self) -> None:
         for title in self.title_idxs.keys():
-            print(title)
+            print(title[:-4])
 
 
 
@@ -139,13 +138,14 @@ class Hub():
                 print('Please enter a valid integer!')
 
         if int(user_choice) == 0:
-            pipeline = Pipeline([('tfidf maker',ag.tf_idf_maker()),
-                                 ('tfidf glosser',ag.tfidf_glosser())])
-            self.aligner = pipeline.fit(self.source_concordances)
+            aligner = ag.tfidf_glosser()
+            aligner.fit(self.source_concordances)
+            self.aligner = aligner
 
         elif int(user_choice) == 1:
             aligner = ag.entropy_glosser()
-            self.aligner = aligner.fit(self.source_concordances)
+            aligner.fit(self.source_concordances)
+            self.aligner = aligner
 
 
     def get_aligner(self):
@@ -155,7 +155,7 @@ class Hub():
         assert self.aligner is not None, 'You need to set an aligner first before you start aligning stuff!!!'
         user_text = self.get_text()
         for _,row in user_text.iterrows():
-            print(self.aligner.align_sentence(row))
+            print(self.aligner.predict(row))
 
 
 #Vector Semantic Block of Hub Object

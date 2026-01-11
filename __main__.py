@@ -1,5 +1,5 @@
 import pandas as pd
-import nltk,re
+import re
 from tcp_utils import Data_Processor as dp
 from tcp_utils import language_model as lm
 from tcp_utils import auto_glosser as ag
@@ -31,7 +31,7 @@ class Hub():
             else:
                 break
         tokenizer = dp.Tokenizer_Transformer(pattern=user_pattern)
-        self._tokenized_corpus = dp.tokenizer.fit_transform(self.corpus)
+        self._tokenized_corpus = tokenizer.fit_transform(self.corpus)
 
     def create_vocabularies(self):
         source_vocab_obj = Vocabulary(' '.join(self._tokenized_corpus.iloc[:,0].values).split())
@@ -43,10 +43,10 @@ class Hub():
         target_concordances = {}
         for token in self.source_vocab:
             # Escape special regex characters in the token
-            source_concordances[token] = self._tokenized_corpus[self._tokenized_corpus.iloc[:,0].str.contains(re.escape(token), regex=True)].index.tolist()
+            source_concordances[token] = self._tokenized_corpus[self._tokenized_corpus.iloc[:,0].str.contains(re.escape(token), regex=True)]
         for token in self.target_vocab:
             # Escape special regex characters in the token
-            target_concordances[token] = self._tokenized_corpus[self._tokenized_corpus.iloc[:,1].str.contains(re.escape(token), regex=True)].index.tolist()
+            target_concordances[token] = self._tokenized_corpus[self._tokenized_corpus.iloc[:,1].str.contains(re.escape(token), regex=True)]
         self.source_concordances,self.target_concordances = source_concordances,target_concordances
 
 #Main Block of Hub Object
@@ -116,6 +116,7 @@ class Hub():
                     print('Please enter a valid number!')
                 else:
                     self.language_model = lm.create_model(self._tokenized_corpus)
+                    break
 
 
     def get_model(self):
@@ -127,7 +128,7 @@ class Hub():
 
 #Aligner Block of the Hub Object
     def create_aligner(self):
-        available_aligners = {i:glosser for i,glosser in enumerate({ag.Entropy_Glosser,ag.Tfidf_Glosser})}
+        available_aligners = {i:glosser for i,glosser in enumerate(['tfidf_glosser','entropy_glosser'])}
         while True:
             for i,aligner in available_aligners.items():
                 print(f'{i}: {aligner}')
@@ -143,7 +144,8 @@ class Hub():
             self.aligner = pipeline.fit(self.source_concordances)
 
         elif int(user_choice) == 1:
-            self.aligner = ag.entropy_glosser.fit(self.source_concordances)
+            aligner = ag.entropy_glosser()
+            self.aligner = aligner.fit(self.source_concordances)
 
 
     def get_aligner(self):

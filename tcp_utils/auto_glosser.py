@@ -16,7 +16,8 @@ class tf_idf_maker(BaseEstimator,TransformerMixin):
         token_2_idx = {token:idx for idx,token in enumerate(X.keys())}
         for token in X.keys():
             corpus.append([set(row.iloc[:,1].split()) for row in X[token].iterrows()])
-        return self.model.fit_transform(corpus)
+        scipy_matrix = self.model.fit_transform(corpus)
+        return pd.DataFrame.sparse.from_spmatrix(scipy_matrix)
 
 class tfidf_glosser(BaseEstimator):
     def __init__(self):
@@ -39,8 +40,11 @@ class entropy_glosser(BaseEstimator):
         corpus = []
         token_2_idx = {token: idx for idx, token in enumerate(X.keys())}
         for token in X.keys():
-            corpus.append([set(row.iloc[:, 1].split()) for row in X[token].iterrows()])
+            df = X[token]
+            for _,row in df.iterrows():
+                corpus.append(' '.join(set(row.iloc[1].split())))
         count_table = self.model.fit_transform(corpus)
+        count_table = pd.DataFrame.sparse.from_spmatrix(count_table)
         count_table = count_table + 1
         count_table.div(count_table.sum(axis=1), axis=0)
         entropy_table = np.log(count_table)

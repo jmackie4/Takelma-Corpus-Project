@@ -3,6 +3,7 @@ import numpy as np
 from typing import Dict
 from sklearn.base import BaseEstimator
 from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
+from collections import Counter
 
 def df_slice_to_string(dataframe:pd.DataFrame) -> str:
     return ' '.join(dataframe.iloc[:,1].values.tolist())
@@ -42,10 +43,34 @@ class entropy_glosser(BaseEstimator):
         probability_table = frequency_table.div(frequency_table.sum(axis=1), axis=0)
         entropy_table = np.log2(probability_table)
         self.model_ = entropy_table * -1
+        self.model_['Entropy'] = (self.model_ * probability_table).sum(axis=1)
+        print(self.model_.head())
         return self
 
     def predict(self, X: pd.Series):
-        indexes = list(set(X.iloc[0].split()))
-        columns = [token for token in X.iloc[1].split() if token in self.model_.columns]
-        model_slice = self.model_.loc[indexes, columns]
-        return model_slice.idxmin(axis=1)
+        indexes = Counter(X.iloc[0].split())
+        columns = Counter([token for token in X.iloc[1].split() if token in self.model_.columns])
+        self.predict_recursively(indexes, columns)
+
+    def predict_recursively(self, X: Counter, y: Counter):
+        X_list = [key for key,value in X.items() if value > 0]
+        y_list = [key for key,value in y.items() if value > 0]
+        if len(X_list) == 0 or len(y_list) == 0:
+            print('Done with this sentence!!!')
+
+        elif len(X_list) == 1:
+            token_glosses = self.model_.loc[X_list[0]]
+            token_glosses = token_glosses.drop('Entropy')
+            print(f'{X_list[0]} {token_glosses.idxmin()}')
+
+        elif len(X_list) > 1:
+            token_glosses = self.model_.sort_values(by=['Entropy'])
+            token_glosses = token_glosses.drop('Entropy',axis=1)
+            token_glosses = token_glosses.loc[X_list,y_list]
+            print(f'{token_glosses.index[0]} {token_glosses.iloc[0].idxmin()}')
+            X[token_glosses.index[0]] -= 1
+            y[token_glosses.iloc[0, :-1].idxmin()] -= 1
+            self.predict_recursively(X, y)
+
+
+

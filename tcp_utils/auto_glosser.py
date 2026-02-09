@@ -59,8 +59,7 @@ class entropy_glosser(BaseEstimator):
             print('Done with this sentence!!!')
 
         elif len(X_list) == 1:
-            token_glosses = self.model_.loc[X_list[0]]
-            token_glosses = token_glosses.drop('Entropy')
+            token_glosses = self.model_.loc[X_list[0],y_list]
             print(f'{X_list[0]} {token_glosses.idxmin()}')
 
         elif len(X_list) > 1:
@@ -69,7 +68,7 @@ class entropy_glosser(BaseEstimator):
             token_glosses = token_glosses.loc[X_list,y_list]
             print(f'{token_glosses.index[0]} {token_glosses.iloc[0].idxmin()}')
             X[token_glosses.index[0]] -= 1
-            y[token_glosses.iloc[0, :-1].idxmin()] -= 1
+            y[token_glosses.iloc[0].idxmin()] -= 1
             self.predict_recursively(X, y)
 
 

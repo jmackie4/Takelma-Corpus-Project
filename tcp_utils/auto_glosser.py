@@ -5,35 +5,64 @@ from sklearn.base import BaseEstimator
 from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
 from collections import Counter
 
-def df_slice_to_string(dataframe:pd.DataFrame) -> str:
-    return ' '.join(dataframe.iloc[:,1].values.tolist())
+def df_column_to_string(dataframe:pd.DataFrame,column_idx=1) -> str:
+    return ' '.join(dataframe.iloc[:,column_idx].astype(str).values.tolist())
 
-class tfidf_glosser(BaseEstimator):
+
+class BaseGlosser(BaseEstimator):
+    def __init__(self):
+        pass
+
+    def fit(self,X,y=None):
+        self.model = pd.DataFrame(X)
+        return self
+
+    def predict(self,X,y=None):
+        indexes = Counter([token for token in X.iloc[0].split() if token in self.model.index])
+        columns = Counter([token for token in X.iloc[1].split() if token in self.model.columns])
+        output = self.predict_recursively(indexes, columns)
+        print(output)
+        return output
+
+    def predict_recursively(self,X:Counter,y:Counter):
+        x_list = [key for key,value in X.items() if value > 0]
+        y_list = [key for key,value in y.items() if value > 0]
+        results = []
+        if x_list == [] or y_list == []:
+            if y_list == []:
+                return results + [(item,'no gloss') for item in x_list if x_list != []]
+            elif x_list == []:
+                return results + [('no source',item) for item in y_list if y_list != []]
+
+
+        elif len(x_list) == 1:
+            return results + [(x_list[0],self.model.loc[x_list[0],y_list].idxmax())]
+
+        elif len(x_list) > 1:
+            results.append((x_list[0],self.model.loc[x_list[0],y_list].idxmax()))
+            X[x_list[0]] -= 1
+            y[self.model.loc[x_list[0],y_list].idxmax()] -= 1
+            return results + self.predict_recursively(X,y)
+
+
+class tfidf_glosser(BaseGlosser):
     def __init__(self):
         pass
 
     def fit(self,X:Dict[str,pd.DataFrame],y=None):
-        concordance_list = [df_slice_to_string(X[key]) for key in X.keys()]
+        concordance_list = [df_column_to_string(X[key]) for key in X.keys()]
         vectorizer = TfidfVectorizer()
         tfidf_matrix = vectorizer.fit_transform(concordance_list)
-        self.model_ = pd.DataFrame.sparse.from_spmatrix(tfidf_matrix,index=list(X.keys()), columns=vectorizer.get_feature_names_out())
+        self.model = pd.DataFrame.sparse.from_spmatrix(tfidf_matrix,index=list(X.keys()), columns=vectorizer.get_feature_names_out())
         return self
 
 
-    def predict(self,X:pd.Series):
-        indexes = list(set(X.iloc[0].split()))
-        columns = [token for token in X.iloc[1].split() if token in self.model_.columns]
-        model_slice = self.model_.loc[indexes,columns]
-        model_slice = model_slice.sparse.to_dense()
-        return model_slice.idxmax(axis=1)
-
-
-class entropy_glosser(BaseEstimator):
+class entropy_glosser(BaseGlosser):
     def __init__(self):
         pass
 
     def fit(self, X: Dict[str, pd.DataFrame], y=None):
-        concordance_list = [df_slice_to_string(X[key]) for key in X.keys()]
+        concordance_list = [df_column_to_string(X[key]) for key in X.keys()]
         vectorizer = CountVectorizer()
         tfidf_matrix = vectorizer.fit_transform(concordance_list)
         frequency_table = pd.DataFrame.sparse.from_spmatrix(tfidf_matrix, index=list(X.keys()),
@@ -42,34 +71,32 @@ class entropy_glosser(BaseEstimator):
         frequency_table = frequency_table + 1
         probability_table = frequency_table.div(frequency_table.sum(axis=1), axis=0)
         entropy_table = np.log2(probability_table)
-        self.model_ = entropy_table * -1
-        self.model_['Entropy'] = (self.model_ * probability_table).sum(axis=1)
-        print(self.model_.head())
+        self.model = entropy_table * -1
+        self.model['Entropy'] = (self.model * probability_table).sum(axis=1)
+        print(self.model.head())
         return self
 
-    def predict(self, X: pd.Series):
-        indexes = Counter(X.iloc[0].split())
-        columns = Counter([token for token in X.iloc[1].split() if token in self.model_.columns])
-        self.predict_recursively(indexes, columns)
-
     def predict_recursively(self, X: Counter, y: Counter):
-        X_list = [key for key,value in X.items() if value > 0]
-        y_list = [key for key,value in y.items() if value > 0]
-        if len(X_list) == 0 or len(y_list) == 0:
-            print('Done with this sentence!!!')
+        x_list = [key for key, value in X.items() if value > 0]
+        y_list = [key for key, value in y.items() if value > 0]
+        results = []
+        if x_list == [] or y_list == []:
+            if y_list == []:
+                return results + [(item, 'no gloss') for item in x_list if x_list != []]
+            elif x_list == []:
+                return results + [('no source', item) for item in y_list if y_list != []]
 
-        elif len(X_list) == 1:
-            token_glosses = self.model_.loc[X_list[0],y_list]
-            print(f'{X_list[0]} {token_glosses.idxmin()}')
+        elif len(x_list) == 1:
+            return results + [(x_list[0], self.model.loc[x_list[0], y_list].idxmin())]
 
         elif len(X_list) > 1:
-            token_glosses = self.model_.sort_values(by=['Entropy'])
+            token_glosses = self.model.loc[x_list,y_list]
+            token_glosses = self.model.sort_values(by=['Entropy'])
             token_glosses = token_glosses.drop('Entropy',axis=1)
-            token_glosses = token_glosses.loc[X_list,y_list]
-            print(f'{token_glosses.index[0]} {token_glosses.iloc[0].idxmin()}')
+            results.append((token_glosses.index[0], token_glosses.iloc[0].idxmin()))
             X[token_glosses.index[0]] -= 1
             y[token_glosses.iloc[0].idxmin()] -= 1
-            self.predict_recursively(X, y)
+            return results + self.predict_recursively(X, y)
 
 
 

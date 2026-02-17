@@ -18,11 +18,9 @@ class BaseGlosser(BaseEstimator):
         return self
 
     def predict(self,X,y=None):
-        indexes = Counter([token for token in X.iloc[0].split() if token in self.model.index])
-        columns = Counter([token for token in X.iloc[1].split() if token in self.model.columns])
-        output = self.predict_recursively(indexes, columns)
-        print(output)
-        return output
+        indexes = Counter(set([token for token in X.iloc[0].split() if token in self.model.index]))
+        columns = Counter(set([token for token in X.iloc[1].split() if token in self.model.columns]))
+        return self.predict_recursively(indexes, columns)
 
     def predict_recursively(self,X:Counter,y:Counter):
         x_list = [key for key,value in X.items() if value > 0]
@@ -62,17 +60,7 @@ class entropy_glosser(BaseGlosser):
         pass
 
     def fit(self, X: Dict[str, pd.DataFrame], y=None):
-        concordance_list = [df_column_to_string(X[key]) for key in X.keys()]
-        vectorizer = CountVectorizer()
-        tfidf_matrix = vectorizer.fit_transform(concordance_list)
-        frequency_table = pd.DataFrame.sparse.from_spmatrix(tfidf_matrix, index=list(X.keys()),
-                                                            columns=vectorizer.get_feature_names_out())
-        frequency_table = frequency_table.sparse.to_dense()
-        frequency_table = frequency_table + 1
-        probability_table = frequency_table.div(frequency_table.sum(axis=1), axis=0)
-        entropy_table = np.log2(probability_table)
-        self.model = entropy_table * -1
-        self.model['Entropy'] = (self.model * probability_table).sum(axis=1)
+        self.model = transform_dict_to_entropy_table(X)
         print(self.model.head())
         return self
 
@@ -89,9 +77,10 @@ class entropy_glosser(BaseGlosser):
         elif len(x_list) == 1:
             return results + [(x_list[0], self.model.loc[x_list[0], y_list].idxmin())]
 
-        elif len(X_list) > 1:
-            token_glosses = self.model.loc[x_list,y_list]
-            token_glosses = self.model.sort_values(by=['Entropy'])
+        elif len(x_list) > 1:
+            y_list_with_entropy = y_list+['Entropy']
+            token_glosses = self.model.loc[x_list,y_list_with_entropy]
+            token_glosses = token_glosses.sort_values(by=['Entropy'])
             token_glosses = token_glosses.drop('Entropy',axis=1)
             results.append((token_glosses.index[0], token_glosses.iloc[0].idxmin()))
             X[token_glosses.index[0]] -= 1
@@ -99,4 +88,29 @@ class entropy_glosser(BaseGlosser):
             return results + self.predict_recursively(X, y)
 
 
+def transform_dict_to_entropy_table(X:Dict[str,pd.DataFrame]):
+    frequency_table = create_frequency_table(X)
+    probability_table = create_probability_table(frequency_table)
+    return create_entropy_table(probability_table)
+
+
+def create_frequency_table(X:Dict[str,pd.DataFrame]):
+    input_for_vectorizer = [df_column_to_string(X[key]) for key in X.keys()]
+    vectorizer = CountVectorizer()
+    sparse_matrix = vectorizer.fit_transform(input_for_vectorizer)
+    dense_array_matrix = sparse_matrix.toarray()
+    output = pd.DataFrame(dense_array_matrix,index=list(X.keys()),columns=vectorizer.get_feature_names_out())
+    output = output + 1
+    return output
+
+
+def create_probability_table(freq_table:pd.DataFrame):
+    return freq_table.div(freq_table.sum(axis=1),axis=0)
+
+
+def create_entropy_table(probability_table:pd.DataFrame):
+    entropy_table =  np.log2(probability_table) * -1
+    entropy_vector = (entropy_table * probability_table).sum(axis=1)
+    entropy_table['Entropy'] = entropy_vector
+    return entropy_table
 

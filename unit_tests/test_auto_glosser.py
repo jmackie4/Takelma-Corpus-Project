@@ -1,6 +1,7 @@
 import unittest
 from tcp_utils import auto_glosser as ag
 import pandas as pd
+import numpy as np
 from collections import Counter
 
 class Test_Column_to_String(unittest.TestCase):
@@ -84,4 +85,55 @@ class Test_Base_Glosser(unittest.TestCase):
         output = glosser.predict_recursively(test_x, test_y)
         self.assertEqual(len(output), 4)
 
+
+class Test_Create_Frequency_Table(unittest.TestCase):
+    def setUp(self):
+        self.valid_dictionary = {'test one': pd.DataFrame({'column1':['one','two','three'],
+                                                                 'column2':['four','five','six'],
+                                                                 'column3':['seven','eight','nine']})}
+        self.test_dataframe = pd.DataFrame({'column1':['one','two','three'],
+                                            ' column2':['four','five','six'],})
+    def test_valid_input(self):
+        output = ag.create_frequency_table(self.valid_dictionary)
+        self.assertIsInstance(output,pd.DataFrame)
+
+    def test_invalid_dataframe_input(self):
+        with self.assertRaises(pd.errors.IndexingError):
+            ag.create_frequency_table(self.test_dataframe)
+
+
+class Test_Create_Probability_Table(unittest.TestCase):
+    def setUp(self):
+        self.test_dataframe = pd.DataFrame({1:[1,2,3],
+                                           2:[4,5,6],
+                                           3:[7,8,9]},
+                                           )
+
+    def test_valid_input(self):
+        output = ag.create_probability_table(self.test_dataframe)
+        self.assertTrue(output.sum().sum() == len(self.test_dataframe))
+
+    def test_invalid_input(self):
+        test_np_array = np.array([[1,2,3],[4,5,6]])
+        with self.assertRaises(AttributeError):
+            ag.create_probability_table(test_np_array)
+
+
+class Test_Create_Entropy_Table(unittest.TestCase):
+    def setUp(self):
+        self.probability_table = pd.DataFrame({1:[0.9,0.7,0.5],
+                                                    2:[0.05,0.15,0.25],
+                                                    3:[0.05,0.15,0.25],
+                                                    }
+                                                   )
+
+    def test_valid_input(self):
+        output = ag.create_entropy_table(self.probability_table)
+        reversed_entropy_table = output ** 2
+        test_equation = (self.probability_table.sum().sum()) - (reversed_entropy_table.sum().sum())
+        self.assertTrue(bool(test_equation < 0.01))
+
+    def test_get_entropy_values(self):
+        output = ag.create_entropy_table(self.probability_table)
+        self.assertIsInstance(output['Entropy'],pd.Series)
 

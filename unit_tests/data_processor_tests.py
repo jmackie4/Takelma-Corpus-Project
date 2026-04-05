@@ -34,15 +34,22 @@ class CorpusLoaderTests(unittest.TestCase):
                 f.write('This is a test file.')
 
             with open(os.path.join(temp_folder2_path, 'test_file1.txt'), 'w') as f:
-                f.write('This is another test file.')
+                f.write('This is the parallel matching test file.')
 
             corpus_loader = dp.Corpus_Loader()
             test_dict = {'source_language':temp_folder1_path, 'target_language':temp_folder2_path}
-            output = corpus_loader.get_parallel_text('test_file1.txt', temp_folder1_path, temp_folder2_path)
-            self.assertIsInstance(output,tuple)
-            self.assertTrue(all(isinstance(item,list) for item in output))
+            invalid_call = corpus_loader.get_parallel_text('test_file1.txt',temp_folder1_path,
+                                                     temp_folder2_path)
+            valid_call = corpus_loader.get_parallel_text('test_file1.txt',source_lang_path=temp_folder1_path,
+                                                         target_lang_path=temp_folder2_path)
+            with self.assertRaises(StopIteration):
+                next(invalid_call)
 
-    def test_parallel_texts_generator(self):
+            self.assertTrue(len(list(valid_call)) == 1)
+            self.assertTrue(all(isinstance(item,tuple) for item in list(valid_call)))
+
+
+    def test_corpus_loader_transform(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             temp_folder1_path = os.path.join(tmpdir,'temp_folder1')
             os.makedirs(temp_folder1_path)
@@ -54,14 +61,13 @@ class CorpusLoaderTests(unittest.TestCase):
                 f.write('This is a test file.')
 
             with open(os.path.join(temp_folder2_path, 'test_file1.txt'), 'w') as f:
-                f.write('This is another test file.')
+                f.write('This is the parallel matching test file.')
 
             corpus_loader = dp.Corpus_Loader()
-            output = corpus_loader.parallel_text_generator({'source_language':temp_folder1_path, 'target_language':temp_folder2_path})
-            self.assertIsInstance(output,types.GeneratorType)
-            self.assertTrue(all(isinstance(sub_item,tuple) for sub_item in output))
-
-
+            input = {'source_lang_path':temp_folder1_path, 'target_lang_path':temp_folder2_path}
+            output = corpus_loader.fit_transform(input)
+            self.assertTrue(isinstance(output,types.GeneratorType))
+            self.assertTrue(isinstance(next(output),tuple))
 
 
 

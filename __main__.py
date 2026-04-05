@@ -11,7 +11,7 @@ from nltk.lm.vocabulary import Vocabulary
 
 class Hub():
     def __init__(self):
-        self.corpus,self.title_idxs = dp.create_corpus()
+        self.corpus,self.text_generator = dp.create_corpus()
         self.create_tokenized_corpus()
         self.create_vocabularies()
         self.create_concordances()

@@ -26,9 +26,9 @@ class Corpus_Transformer(BaseEstimator, TransformerMixin):
             else:
                 print('Please try again!')
 
-        output_dict['source_language'] = os.path.join(X, user_choice)
+        output_dict['source_lang_path'] = os.path.join(X, user_choice)
         text_directories.remove(user_choice)
-        output_dict['target_language'] = os.path.join(X, text_directories[0])
+        output_dict['target_lang_path'] = os.path.join(X, text_directories[0])
         return output_dict
 
     def get_subdirectories(self,X:str):
@@ -43,20 +43,25 @@ class Corpus_Loader(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
 
-    def transform(self,X:Dict[str,str]):
-        return self.parallel_text_generator(X)
+    def transform(self,X:Dict[str,str]): #Input is just directory paths. Each path leads to folder of txt files
+        parallel_texts = self.get_parallel_text(*[file for file in os.listdir(X['source_lang_path'])],
+                                                source_lang_path=X['source_lang_path'],
+                                                target_lang_path=X['target_lang_path'])
+        for text in parallel_texts:
+            yield text
 
-    def get_parallel_text(self,file_name,source_path,target_path):
-        with open(os.path.join(source_path,file_name),'r',encoding='utf-8') as f:
-            source_sentences = [line.strip() for line in f.readlines()]
+    def get_parallel_text(self,*args,source_lang_path=None,target_lang_path=None):
+    #args are individual file names, kwargs are source and target folders
+       if source_lang_path and target_lang_path:
+        for arg in args:
+            with open(os.path.join(source_lang_path,arg),'r',encoding='utf-8') as f:
+                source_sentences = [line.strip() for line in f]
 
-        with open(os.path.join(target_path,file_name),'r',encoding='utf-8') as f:
-            target_sentences = [line.strip() for line in f.readlines()]
-        return source_sentences,target_sentences
-
-    def parallel_text_generator(self,X:Dict[str,str]):
-        for file in os.listdir(X['source_language']):
-            yield self.get_parallel_text(file,X['source_language'],X['target_language'])
+            with open(os.path.join(target_lang_path,arg),'r',encoding='utf-8') as f:
+                target_sentences = [line.strip() for line in f]
+            yield arg,source_sentences,target_sentences
+        else:
+            print(f'Here\'s source:{source_lang_path}, and here\'s target:{target_lang_path}')
 
 def create_corpus():
     while True:
@@ -69,10 +74,14 @@ def create_corpus():
     pipeline = Pipeline([('corpus_transformer', Corpus_Transformer()),
                          ('corpus_loader', Corpus_Loader())])
     pipeline_output = pipeline.fit_transform(user_path)
-    corpus_dataframe = pd.DataFrame({'source_language': pipeline_output['source_sents'],
-                                     'target_language': pipeline_output['target_sents'],
-                                     })
-    return corpus_dataframe,pipeline_output['text_idxs']
+    source_sentences = []
+    target_sentences = []
+    for text in pipeline_output:
+        source_sentences.extend(text[1])
+        target_sentences.extend(text[2])
+    corpus_dataframe = pd.DataFrame({'source_sentences': source_sentences,
+                                     'target sentences': target_sentences})
+    return corpus_dataframe,pipeline_output
 
 
 

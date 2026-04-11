@@ -93,7 +93,8 @@ class Hub():
         sents = self._tokenized_corpus.iloc[:, int(user_choice)]
         user_sequence = input('Please enter your sequence: ')
         filter = sents.str.contains(re.escape(user_sequence.lower()), regex=True, case=False)
-        print(self.corpus[filter])
+        for _,row in self.corpus[filter].iterrows():
+            print(f"{row.iloc[0]} | {row.iloc[1]}")
 
 
 

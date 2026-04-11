@@ -1,8 +1,9 @@
 import pandas as pd
-import nltk,os
+import numpy as np
+import nltk,os,itertools
 from sklearn.base import BaseEstimator, TransformerMixin
 import spacy
-from typing import Dict
+from typing import Dict,List
 from sklearn.pipeline import Pipeline
 
 #The following just takes a root folder that holds the two directories for the parallel texts
@@ -76,13 +77,17 @@ def create_corpus():
     pipeline_output = pipeline.fit_transform(user_path)
     source_sentences = []
     target_sentences = []
+    tuples_for_multindex= []
     for text in pipeline_output:
         source_sentences.extend(text[1])
         target_sentences.extend(text[2])
-    corpus_dataframe = pd.DataFrame({'source_sentences': source_sentences,
-                                     'target sentences': target_sentences})
-    return corpus_dataframe,pipeline_output
+        tuples_for_multindex.extend(list(zip(itertools.repeat(text[0]),[i for i,_ in enumerate(text[1])])))
 
+    multiindex = pd.MultiIndex.from_tuples(tuples_for_multindex)
+    corpus_dataframe = pd.DataFrame({'source_sentences': source_sentences,
+                                     'target sentences': target_sentences},
+                                    index=multiindex)
+    return corpus_dataframe
 
 
 class Tokenizer_Transformer(BaseEstimator, TransformerMixin):
@@ -100,8 +105,8 @@ class Tokenizer_Transformer(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: pd.DataFrame):
-        X.iloc[:,0] = X.iloc[:, 0].apply(lambda x: ' '.join(self.tokenizer_.tokenize(x.lower())))
-        X.iloc[:,1] = X.iloc[:, 1].apply(lambda x: ' '.join([token.lemma_.lower() for token in self._nlp(x)
+        X.iloc[:,0] = X.iloc[:,0].apply(lambda x: ' '.join(self.tokenizer_.tokenize(x.lower())))
+        X.iloc[:,1] = X.iloc[:,1].apply(lambda x: ' '.join([token.lemma_.lower() for token in self._nlp(x)
                                                          if token.tag_ not in self._tag_filter and not
                                                          token.is_punct]))
         return X

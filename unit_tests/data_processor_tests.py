@@ -69,5 +69,3 @@ class CorpusLoaderTests(unittest.TestCase):
             self.assertTrue(isinstance(output,types.GeneratorType))
             self.assertTrue(isinstance(next(output),tuple))
 
-
-

@@ -11,7 +11,7 @@ from nltk.lm.vocabulary import Vocabulary
 
 class Hub():
     def __init__(self):
-        self.corpus,self.text_generator = dp.create_corpus()
+        self.corpus = dp.create_corpus()
         self.create_tokenized_corpus()
         self.create_vocabularies()
         self.create_concordances()
@@ -49,30 +49,26 @@ class Hub():
         self.source_concordances,self.target_concordances = source_concordances,target_concordances
 
 #Main Block of Hub Object
-    def get_text(self) -> None:
-        idx_2_title = {i:title for i,title in enumerate(self.title_idxs)}
-        for key,item in idx_2_title.items():
-            print(f'{key}: {item}')
+    def get_text(self):
+        idx_2_titles = {i:title for i,title in enumerate(self.corpus.index.unique(level=0))}
+        for i,title in idx_2_titles.items():
+            print(f'{i}: {title}')
         while True:
-            user_choice = input('Please select the text you would like to display using a number:\n')
+            user_choice = input('Please select which text you want by inputting the number! ')
             try:
-                int(user_choice)
-            except ValueError:
-                print('Please enter a valid number and not an empty string or a series of characters!')
-
-            if int(user_choice) in idx_2_title:
+                output = idx_2_titles[int(user_choice)]
                 break
-            else:
-                print('Please enter a valid number! The one you provided is not in the list of possible numbers!')
-        title_idxs = self.title_idxs[idx_2_title[int(user_choice)]]
-        print(self.corpus.iloc[title_idxs[0]:title_idxs[1],:])
-        return self.corpus.iloc[title_idxs[0]:title_idxs[1],:]
+            except ValueError:
+                print('Please enter a valid number!')
+            except KeyError:
+                print('Please enter a valid number!')
+        for _,row in self.corpus.loc[idx_2_titles[int(user_choice)]].iterrows():
+            print(f'{row.iloc[0]} || {row.iloc[1]}')
 
 
     def get_titles(self) -> None:
-        for title in self.title_idxs.keys():
+        for _,title in enumerate(self.corpus.index.unique(level=0)):
             print(title[:-4])
-
 
 
     def set_corpus(self,new_corpus:pd.DataFrame):
@@ -153,8 +149,19 @@ class Hub():
 
     def align_text(self):
         assert self.aligner is not None, 'You need to set an aligner first before you start aligning stuff!!!'
-        user_text = self.get_text()
-        for _,row in user_text.iterrows():
+        idx_2_titles = {i: title for i, title in enumerate(self.corpus.index.unique(level=0))}
+        for i, title in idx_2_titles.items():
+            print(f'{i}: {title}')
+        while True:
+            user_choice = input('Please select which text you want by inputting the number! ')
+            try:
+                output = idx_2_titles[int(user_choice)]
+                break
+            except ValueError:
+                print('Please enter a valid number!')
+            except KeyError:
+                print('Please enter a valid number!')
+        for _, row in self.corpus.loc[idx_2_titles[int(user_choice)]].iterrows():
             print(self.aligner.predict(row))
 
 
